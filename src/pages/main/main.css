@@ -1,0 +1,9 @@
+
+.ic-spinner {
+    animation: rotateCW 1.5s infinite linear;
+}
+
+@keyframes rotateCW {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

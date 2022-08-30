@@ -1,0 +1,12 @@
+.issue-label{
+    width: fit-content;
+    text-align: center;
+    display: block;
+    margin: 0px auto;
+    margin-top: 10px;
+    border-radius: 10px;
+    padding: 7px;
+    color: #fff;
+    font-weight: bold;
+    background: #845ec2;
+}
