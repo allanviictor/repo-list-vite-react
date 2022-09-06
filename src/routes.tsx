@@ -8,6 +8,9 @@ export default function AppRouter(){
          <BrowserRouter> 
             <Routes>
                 <Route path="/" element={<Main/>}/>
+                <Route path="/main" element={<Main/>}/>
+            </Routes>
+            <Routes>
                 <Route path="repositories/:id" element={<Repositories/>}/>
             </Routes>
 

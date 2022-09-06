@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, MouseEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from '../../api/api'
 import { FaArrowLeft } from 'react-icons/fa'
@@ -25,8 +25,15 @@ interface Issues {
     avatar_url:string,
     login:string
     html_url:string,
-    title:string
+    title:string,
+    state:string,
     label: Label[] | null
+}
+
+interface ButtonFilter {
+    state:string,
+    label:string,
+    actived:boolean
 }
 
 export default function Repositories(){
@@ -34,7 +41,11 @@ export default function Repositories(){
     const [repoDetails,setRepoDetails] = useState<Owner | null>(null)
     const [repoIssues,setRepoIssues] = useState<Issues[] | null>(null)
     const [page,setPage] = useState<number>(1)
-    const [issueTypeActived,setIssueTypeActived] = useState('all')
+    const [issueTypeActived,setIssueTypeActived] = useState<ButtonFilter[]>([
+        { state:"all", label:"all", actived:true },
+        { state:"open", label:"open", actived:false },
+        { state:"closed", label:"closed", actived:false }
+    ])
 
     useEffect(()=>{
         
@@ -44,7 +55,7 @@ export default function Repositories(){
                 api.get(`/repos/${id}/issues`,{
                     params:{
                         per_page: 5,
-                        state: issueTypeActived
+                        state: "all"
                     }
                 })
             ])
@@ -56,24 +67,24 @@ export default function Repositories(){
             let IssuesData:Issues[] = [];
             const setIssuesData = async () => {
                 for await (let item of repoIssuesData.data) {
-                    let { id:id_issue, user:{avatar_url, login}, html_url, title, labels:label } = item
-                    IssuesData.push({ id_issue, avatar_url, login, html_url, title, label } as Issues)
+                    let { id:id_issue, user:{avatar_url, login}, html_url, title, labels:label, state } = item
+                    IssuesData.push({ id_issue, avatar_url, login, html_url, title, label, state } as Issues)
                     
                 }
             };setIssuesData()
             setRepoIssues(IssuesData)
-            console.log('IssuesData',IssuesData)
+            console.log('repoIssuesData',repoIssuesData)
 
         }
         loadRepoDetails()
     },[])
 
-    useEffect(()=>{
+    /* useEffect(()=>{
         async function LoadIssues(){
             let repoIssuesData = await api.get(`/repos/${id}/issues`,{
                 params:{
                     per_page: 5,
-                    state: issueTypeActived,
+                    state: issueTypeActived.find(item => item.actived)?.state,
                     page
                 }
             })
@@ -81,8 +92,8 @@ export default function Repositories(){
             let IssuesData:Issues[] = [];
             const setIssuesData = async () => {
                 for await (let item of repoIssuesData.data) {
-                    let { id:id_issue, user:{avatar_url, login}, html_url, title, labels:label } = item
-                    IssuesData.push({ id_issue, avatar_url, login, html_url, title, label } as Issues)
+                    let { id:id_issue, user:{avatar_url, login}, html_url, title, labels:label, state } = item
+                    IssuesData.push({ id_issue, avatar_url, login, html_url, title, label, state } as Issues)
                     
                 }
             };setIssuesData()
@@ -91,14 +102,14 @@ export default function Repositories(){
         }
 
         LoadIssues()
-    },[page])
+    },[page]) */
 
 
     function handlePage(nextOrPrev:string){
         setPage(nextOrPrev == 'next' ? page + 1 : page - 1)
     }
 
-    async function handleFilter(type:string) {
+    /* async function handleFilter(type:string) {
         setIssueTypeActived(type)
         let repoIssuesData = await api.get(`/repos/${id}/issues`,{
             params:{
@@ -118,58 +129,104 @@ export default function Repositories(){
         };setIssuesData()
         setRepoIssues(IssuesData)
 
+    } */
+
+    async function handleFilter(event:MouseEvent,index:number){
+        
+        
+        issueTypeActived.forEach(item => {
+            item.actived = false
+        })
+        
+        let buttons = document.querySelectorAll('.button-filter')
+        
+        buttons.forEach(item => {
+            item.classList.remove('bg-actived')
+        })
+
+        if(!event.currentTarget.classList.contains('bg-actived')){
+            event.currentTarget.classList.add('bg-actived') 
+        }
+
+        issueTypeActived[index].actived = true
+        
+
+        console.log('issueTypeActived',issueTypeActived)
+
+        let repoIssuesData = await api.get(`/repos/${id}/issues`,{
+            params:{
+                per_page: 5,
+                state: issueTypeActived.find(item => item.actived)?.state,
+                page: 1
+            }
+        })
+
+        let IssuesData:Issues[] = [];
+        const setIssuesData = async () => {
+            for await (let item of repoIssuesData.data) {
+                let { id:id_issue, user:{avatar_url, login}, html_url, title, labels:label, state } = item
+                IssuesData.push({ id_issue, avatar_url, login, html_url, title, label, state } as Issues)
+                
+            }
+        };setIssuesData()
+        setRepoIssues(IssuesData)
+       
     }
 
     return(
-        <div className="container flex justify-center mt-[100px] ">
-            <div className="w-[800px] bg-slate-100 pt-10 px-4 text-center">
+        <div className="container flex justify-center mt-[100px] mb-5">
+            <div className="w-[800px] bg-slate-100 pt-10 px-4 ">
                 <Link to="/">
                     <FaArrowLeft color="#000" size={35}/>
                 </Link>
-
                 <div>
-                    <img className="w-52 mx-auto" src={repoDetails?.avatar} alt={repoDetails?.login}/>
-                    <h2 className="font-bold text-lg">{repoDetails?.name}</h2>
-                    <p className="mt-2">{repoDetails?.description}</p>
-                    <div className="flex">
-                        <button onClick={()=> handleFilter('all')} className="issue-label">
-                            all
-                        </button>
-                        <button onClick={()=> handleFilter('open')} className="issue-label">
-                            open
-                        </button>
-                        <button onClick={()=> handleFilter('closed')} className="issue-label">
-                            closed
-                        </button>
+                    <div>
+
+                        <img className="w-52 mx-auto rounded-full" src={repoDetails?.avatar} alt={repoDetails?.login}/>
+                    </div>
+                    <h2 className="font-bold text-lg text-center">{repoDetails?.name}</h2>
+                    <p className="mt-2 text-center">{repoDetails?.description}</p>
+                    <div className="flex mt-5 justify-center">
+                        {issueTypeActived.map((button:ButtonFilter,index:number) =>(
+                            <button key={button.label} onClick={(e)=> handleFilter(e,index)} className={`${issueTypeActived[index].actived ? 'bg-actived': ''} border-2 py-1 px-3 text-gray-100 button-filter`}>
+                                { button.label }
+                            </button>
+                        ))}
                     </div>
                     <ul className="w-full">
                         {repoIssues?.map((item:Issues) => (
                                 
-                            <li className="mt-10 text-center" key={String(item.id_issue)}>
-                                <img className="mx-auto" src={item.avatar_url} alt={item.login}/>
+                            <li className="mt-10 flex justify-items-start mb-5 items-center" key={String(item.id_issue)}>
+                               
                                 <div>
-
+                                    
+                                    <img className="mx-auto w-20 rounded-full" src={item.avatar_url} alt={item.login}/>
+                                    <p>{item.login}</p>
+                                </div>
+                                <div className="ml-3">
                                     <strong>
                                         <a href={item.html_url} target="_blank">
                                             {item.title}
                                         </a>
-
-                                    </strong><br />
-                                    {item.label?.map((label:Label)=>{
-                                        return(
-                                            <span className="issue-label" key={label.id}>
-                                                {label.name}
-                                            </span>
-                                        )
-                                    })}
-                                    <p>{item.login}</p>
+                                    </strong>
+                                    <div>
+                                        state: {item.state}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        {item.label?.map((label:Label)=>{
+                                            return(
+                                                <div className="issue-label" key={label.id}>
+                                                    {label.name}
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
                                 </div>
-                                
                             </li>
                             
                         ))}
                     </ul>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between pb-5">
                         <button disabled={page == 1 ? true: false} onClick={()=> handlePage('prev')} className="border-2 p-2 bg-[#845ec2] text-gray-100 font-bold">
                             voltar
                         </button>
